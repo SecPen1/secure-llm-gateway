@@ -5,6 +5,8 @@ from pathlib import Path
 
 from fastapi import Header, HTTPException
 
+from .audit_log import log_event
+
 _CLIENTS_PATH = Path(__file__).parent / "clients.json"
 
 
@@ -27,6 +29,12 @@ def _hash_key(api_key: str) -> str:
 
 def authenticate(authorization: str | None = Header(default=None)) -> str:
     if authorization is None or not authorization.startswith("Bearer "):
+        log_event(
+            "auth_failure",
+            client_id=None,
+            outcome="blocked",
+            detail={"reason": "missing_or_malformed_header"},
+        )
         raise HTTPException(status_code=401, detail="missing or malformed Authorization header")
 
     api_key = authorization.removeprefix("Bearer ").strip()
@@ -36,4 +44,9 @@ def authenticate(authorization: str | None = Header(default=None)) -> str:
         if hmac.compare_digest(record["key_hash"], key_hash):
             return client_id
 
+    # client_id is intentionally omitted here, not just unknown: the only
+    # client_id available at this point would be one an attacker claims in
+    # the request body, unverified. Logging it as fact would let anyone
+    # frame a real client in the audit trail for a failure that was theirs.
+    log_event("auth_failure", client_id=None, outcome="blocked", detail={"reason": "invalid_key"})
     raise HTTPException(status_code=401, detail="invalid API key")
