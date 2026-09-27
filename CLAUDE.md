@@ -8,7 +8,7 @@ Secure LLM Gateway — a portfolio project (see [PROJECT_HANDOFF.md](PROJECT_HAN
 
 ## Status
 
-Planning stage. No application code yet. Tech stack (Python/FastAPI vs Node/Express) not yet chosen — check `PROJECT_HANDOFF.md` before assuming one.
+Python 3.12 + FastAPI. Slice 1 (input validation & sanitization) is done — see `gateway/`. Next up: slice 2 (auth layer).
 
 ## Working conventions
 
@@ -20,7 +20,11 @@ Planning stage. No application code yet. Tech stack (Python/FastAPI vs Node/Expr
 
 ## Commands
 
-None yet — this section gets filled in once a stack is chosen and a build system exists (test/lint/run commands go here).
+```
+pip install -r requirements.txt   # install deps (run inside a venv)
+uvicorn gateway.main:app --reload # run the gateway locally
+pytest                            # run the test suite
+```
 
 ## Docs map
 

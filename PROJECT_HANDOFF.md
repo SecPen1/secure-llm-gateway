@@ -34,7 +34,7 @@ Stop after step 6 for v1. Multi-tenant network segmentation, a trained injection
 
 ## Tech Preferences
 
-- Keep the stack minimal and mainstream (e.g. Python/FastAPI or Node/Express) so reviewers can read the code without needing niche framework knowledge
+- Python 3.12 + FastAPI (decided) — Pydantic gives schema validation for free, which slice 1 leans on directly
 - Avoid heavy infrastructure dependencies (no requirement for Kubernetes, service mesh, etc.) — this should run locally with minimal setup for anyone cloning the repo
 
 ## Definition of Done (per slice)
@@ -45,9 +45,10 @@ Stop after step 6 for v1. Multi-tenant network segmentation, a trained injection
 
 ## Not Yet Decided
 
-- Whether to include a lightweight demo UI or keep it API-only
 - Whether to expand into a second lab project (e.g. AI agent sandboxing) after this one is complete
 
 ## Decided
 
 - Repo name: `secure-llm-gateway` (public, under github.com/SecPen1)
+- Stack: Python 3.12 + FastAPI
+- Demo UI: yes, eventually — but deferred until a slice exists worth clicking through (auth + a real LLM call). Slice 1 has no downstream call yet, so it's demoed via automated tests instead.
