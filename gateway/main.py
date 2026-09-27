@@ -12,6 +12,7 @@ from .injection_defense import (
 )
 from .llm_client import get_llm_client
 from .output_filter import filter_response
+from .rate_limiter import RateLimitExceeded, check_cost_budget, check_rate_limit, estimate_cost
 from .schemas import ChatRequest
 
 app = FastAPI(title="Secure LLM Gateway", version="0.1.0")
@@ -50,6 +51,23 @@ def chat(request: ChatRequest, authenticated_client_id: str = Depends(authentica
             detail="client_id does not match the authenticated client",
         )
 
+    estimated_cost = estimate_cost(request.messages)
+    try:
+        check_rate_limit(authenticated_client_id)
+        check_cost_budget(authenticated_client_id, estimated_cost)
+    except RateLimitExceeded as exc:
+        log_event(
+            "rate_limited",
+            client_id=authenticated_client_id,
+            outcome="blocked",
+            detail={"reason": exc.reason, "retry_after_seconds": round(exc.retry_after, 1)},
+        )
+        raise HTTPException(
+            status_code=429,
+            detail=f"rate limit exceeded ({exc.reason})",
+            headers={"Retry-After": str(max(1, round(exc.retry_after)))},
+        ) from exc
+
     try:
         reject_client_system_messages(request.messages)
     except SystemRoleNotAllowed as exc:
@@ -78,7 +96,11 @@ def chat(request: ChatRequest, authenticated_client_id: str = Depends(authentica
         "chat_completed",
         client_id=authenticated_client_id,
         outcome="allowed",
-        detail={"message_count": len(request.messages), "redactions": redacted_categories},
+        detail={
+            "message_count": len(request.messages),
+            "estimated_cost": estimated_cost,
+            "redactions": redacted_categories,
+        },
     )
 
     return {
