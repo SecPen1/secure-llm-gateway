@@ -21,16 +21,16 @@ The audience for the final repo is hiring managers and architects reviewing cand
 
 See `THREAT_MODEL.md` in this repo for the full threat model (assets, actors, STRIDE-based attack paths, trust boundaries). All controls built should map back to a specific item in that document.
 
-## Build Order (v1 scope)
+## Build Order (v1 scope) — complete
 
-1. **Input validation & sanitization** — schema validation on incoming requests, basic injection-pattern screening
-2. **Auth layer** — API key or token-based client authentication, scoped per client
-3. **Prompt injection defenses** — heuristic detection layer (see "Open Design Decisions" in threat model)
-4. **Output filtering** — scan LLM responses for sensitive-data patterns before returning to client
-5. **Audit logging** — structured, immutable logs of requests/responses/security events
-6. **Rate limiting / cost controls** — per-client quotas, usage tracking
+1. **Input validation & sanitization** — done. Schema validation on incoming requests, basic injection-pattern screening.
+2. **Auth layer** — done. API key or token-based client authentication, scoped per client.
+3. **Prompt injection defenses** — done. Heuristic detection layer (see "Open Design Decisions" in threat model — both resolved).
+4. **Output filtering** — done. Scans LLM responses for sensitive-data patterns before returning to client.
+5. **Audit logging** — done. Structured, hash-chained (tamper-evident) logs of requests/responses/security events.
+6. **Rate limiting / cost controls** — done. Per-client quotas (token bucket) and usage tracking (cost budget).
 
-Stop after step 6 for v1. Multi-tenant network segmentation, a trained injection classifier, and advanced anomaly detection are explicitly out of scope for this version (noted in the threat model) — don't build ahead of scope.
+v1 stopped after step 6, as planned. Multi-tenant network segmentation, a trained injection classifier, and advanced anomaly detection remain explicitly out of scope — see README per-slice write-ups for what each control does and doesn't cover.
 
 ## Tech Preferences
 

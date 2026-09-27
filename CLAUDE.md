@@ -8,7 +8,7 @@ Secure LLM Gateway — a portfolio project (see [PROJECT_HANDOFF.md](PROJECT_HAN
 
 ## Status
 
-Python 3.12 + FastAPI. Slices 1–5 done (input validation, auth layer, prompt injection defenses, output filtering, audit logging) — see `gateway/`. Next up: slice 6 (rate limiting / cost controls).
+Python 3.12 + FastAPI. v1 complete — all 6 slices done (input validation, auth layer, prompt injection defenses, output filtering, audit logging, rate limiting / cost controls). See `gateway/`. `PROJECT_HANDOFF.md` says stop after step 6; what's next (scope expansion, a second lab project, or leaving this as-is) hasn't been decided.
 
 The LLM call itself is currently a deterministic stub (`gateway/llm_client.py`, `StubLLMClient`) — no real upstream API integration exists yet. Check `README.md` Slice 4 before assuming otherwise.
 
@@ -30,7 +30,9 @@ python scripts/generate_client_key.py X  # register client X, print its API key 
 python scripts/verify_audit_log.py       # check the audit log's hash chain is intact
 ```
 
-`gateway/clients.json` (the local client registry) and `logs/audit.log` are both git-ignored — generated locally, never committed. Tests never touch either: `tests/conftest.py`'s `audit_log_path` fixture is `autouse=True` and redirects logging to a tmp file for every test.
+`gateway/clients.json` (the local client registry) and `logs/audit.log` are both git-ignored — generated locally, never committed. Tests never touch either: `tests/conftest.py`'s `audit_log_path` fixture is `autouse=True` and redirects logging to a tmp file for every test. Same pattern for rate limiting: `reset_rate_limiter_state` is also `autouse=True`, and a `fake_clock` fixture lets time-based tests (refill, budget window reset) advance time deterministically instead of sleeping.
+
+Rate limits are in-memory per-process (`gateway/rate_limiter.py`) — default 5 requests/client before throttling kicks in. Expect `429`s from manual testing if you script more than a handful of quick requests against one client.
 
 ## Docs map
 

@@ -4,6 +4,7 @@ import pytest
 
 import gateway.audit_log as audit_log_module
 import gateway.auth as auth_module
+import gateway.rate_limiter as rate_limiter_module
 
 TEST_API_KEY = "test-demo-key-do-not-use"
 TEST_CLIENT_ID = "demo-client"
@@ -24,3 +25,20 @@ def audit_log_path(monkeypatch, tmp_path):
     monkeypatch.setattr(audit_log_module, "_LOG_PATH", log_path)
     monkeypatch.setattr(audit_log_module, "_last_hash", audit_log_module._GENESIS_HASH)
     return log_path
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter_state(monkeypatch):
+    # Applied to every test: without this, request/cost counters would
+    # accumulate across unrelated tests that reuse the same demo client_id.
+    monkeypatch.setattr(rate_limiter_module, "_buckets", {})
+    monkeypatch.setattr(rate_limiter_module, "_cost_usage", {})
+
+
+@pytest.fixture
+def fake_clock(monkeypatch):
+    # Lets rate-limit tests advance time deterministically instead of
+    # sleeping for real. current[0] += N moves the clock forward N seconds.
+    current = [1_000_000.0]
+    monkeypatch.setattr(rate_limiter_module, "_clock", lambda: current[0])
+    return current

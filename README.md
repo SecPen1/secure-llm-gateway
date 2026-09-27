@@ -2,7 +2,7 @@
 
 A reference implementation of a security-focused gateway sitting in front of an LLM API (Claude), built as a portfolio project demonstrating applied security architecture — not just working code, but the design decisions and trade-offs behind it.
 
-**Status:** slice 5 of 6 complete. See the docs below for the design work behind it.
+**Status:** v1 complete — all 6 slices done. See the docs below for the design work behind it.
 
 ## Why this exists
 
@@ -20,7 +20,7 @@ This project is a hands-on demonstration of security architecture thinking appli
 3. **Prompt injection defenses** — done (see below)
 4. **Output filtering** — done (see below)
 5. **Audit logging** — done (see below)
-6. Rate limiting / cost controls
+6. **Rate limiting / cost controls** — done (see below)
 
 Each slice gets a working control, a README section explaining the design decision behind it, and a test or demo showing it functioning.
 
@@ -43,6 +43,8 @@ python scripts/generate_client_key.py my-client
 # verify the audit log's tamper-evident hash chain
 python scripts/verify_audit_log.py
 ```
+
+Note: the default rate limit (5 requests, refilling at 1 per 2 seconds per client) applies immediately — expect `429`s if you script more than a handful of quick requests against one client while testing.
 
 ## Slice 1: Input validation & sanitization
 
@@ -116,6 +118,27 @@ Each record also carries `prev_hash` (the previous record's hash) and its own `h
 **Maps to threat model:** `THREAT_MODEL.md` → Repudiation (immutable, timestamped, identity-tied audit logging) and the "Audit logs" asset.
 
 **Demo:** see `tests/test_audit_log.py` — covers a successful chat being logged, an injection block logged with categories but not the triggering text, an auth failure logged with no claimed identity, a redaction event logged without the raw sensitive value, and a hash-chain tamper attempt being detected.
+
+## Slice 6: Rate limiting / cost controls
+
+**What it does:** `gateway/rate_limiter.py` adds two independent per-client checks, both running before any content inspection (system-role rejection, injection screening) so capacity is protected before spending compute on a request that's already going to be throttled:
+
+1. **Request-rate limiting** — a token bucket per `client_id` (default: burst up to 5 requests, refilling at 1 every 2 seconds). Allows a real conversation's natural bursts while still bounding sustained volume.
+2. **Cost budget** — a rolling per-client budget (default: 20,000 cost units per 24 hours). Since there's no real upstream LLM call yet (`gateway/llm_client.py` is still a stub — see Slice 4), actual token counts aren't available; character count of submitted content is used as a documented stand-in.
+
+Both are enforced with `429 Too Many Requests` and a `Retry-After` header. Every successful chat now also logs its `estimated_cost` in the audit trail (Slice 5), so a client's cumulative usage can be reconstructed from the log without a separate tracking system.
+
+**Design decision — token bucket, not a fixed window counter:** a fixed window (e.g. "5 requests per minute, resetting on the minute") either double-allows a burst that straddles the window boundary or unnecessarily throttles a client sending a few messages in quick succession. A token bucket bounds the sustained rate just as strictly while tolerating legitimate bursts — the standard mainstream choice, not a novel one.
+
+**Design decision — two separate checks, not one:** a fast burst of small requests and a slow trickle of enormous ones are different failure modes (`THREAT_MODEL.md` names both: high-volume *and* high-cost requests under Denial of Service / Denial of Wallet). Rate limiting alone wouldn't catch a client sending one request every few seconds that's each enormous; a cost budget alone wouldn't catch a rapid-fire flood of tiny ones. Composing two small, single-purpose checks stayed simpler than one mechanism trying to model both.
+
+**Known gap, deliberately out of scope for v1:** state is in-memory, per-process — quotas reset on restart and don't hold up across multiple instances behind a load balancer; a real deployment needs a shared store (e.g. Redis) for this to be correct at scale. The cost proxy (character count) is a stand-in that should be replaced with real token usage once a real upstream LLM call exists. Anomaly detection on usage spikes (`THREAT_MODEL.md`'s fuller mitigation) is explicitly out of scope per `PROJECT_HANDOFF.md`'s v1 build order.
+
+**Maps to threat model:** `THREAT_MODEL.md` → Denial of Service / Denial of Wallet, covering the "Rate limit / usage data" asset.
+
+**Demo:** see `tests/test_rate_limiting.py` — covers requests within capacity, a burst exceeding capacity being rejected, recovery after the refill window (using a fake clock, not a real sleep), a cost budget being exceeded, and the budget resetting after its window.
+
+This closes out v1 scope (`PROJECT_HANDOFF.md`: "stop after step 6"). What comes next — expanding scope, a second lab project, or leaving this as the finished reference build — is an open call, not yet made.
 
 ## Built with Claude Code
 
