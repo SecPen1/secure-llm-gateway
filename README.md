@@ -145,7 +145,11 @@ Both are enforced with `429 Too Many Requests` and a `Retry-After` header. Every
 
 **Demo:** see `tests/test_rate_limiting.py` — covers requests within capacity, a burst exceeding capacity being rejected, recovery after the refill window (using a fake clock, not a real sleep), a cost budget being exceeded, and the budget resetting after its window.
 
-This closes out v1 scope as originally planned — stop after step 6. What comes next — expanding scope, a second lab project, or leaving this as the finished reference build — is an open call, not yet made.
+This closes out v1 scope as originally planned — stop after step 6.
+
+## What's next: v2 (planning)
+
+A second phase is planned, extending this same gateway rather than starting a separate project: a local, on-machine LLM (via [Ollama](https://ollama.com)) as a second backend alongside the cloud path, with routing decided per-request based on whether the content looks confidential — reusing the sensitive-data detection already built for output filtering (Slice 4), applied to input instead. The new attack surface this introduces (routing-decision integrity, a new local trust boundary, fail-open/fail-closed behavior if the local backend is unreachable) is threat-modeled in `THREAT_MODEL.md`'s "v2 (Planned)" section before any of it is built — not yet started as of this writing.
 
 ## Built with Claude Code
 
