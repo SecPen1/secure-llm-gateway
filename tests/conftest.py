@@ -12,7 +12,9 @@ TEST_CLIENT_ID = "demo-client"
 
 @pytest.fixture
 def auth_headers(monkeypatch):
-    key_hash = hashlib.sha256(TEST_API_KEY.encode("utf-8")).hexdigest()
+    # Not a password hash: TEST_API_KEY stands in for a 256-bit random token,
+    # not a human-chosen low-entropy secret - see gateway/auth.py._hash_key.
+    key_hash = hashlib.sha256(TEST_API_KEY.encode("utf-8")).hexdigest()  # lgtm[py/weak-sensitive-data-hashing]
     monkeypatch.setattr(auth_module, "_CLIENTS", {TEST_CLIENT_ID: {"key_hash": key_hash}})
     return {"Authorization": f"Bearer {TEST_API_KEY}"}
 
