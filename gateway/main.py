@@ -1,6 +1,9 @@
+from pathlib import Path
+
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
 
 from .audit_log import log_event
 from .auth import authenticate
@@ -110,3 +113,10 @@ def chat(request: ChatRequest, authenticated_client_id: str = Depends(authentica
         "response": filtered_response,
         "redactions": redacted_categories,
     }
+
+
+# Mounted last, deliberately: FastAPI/Starlette match routes in registration
+# order, so /healthz and /v1/chat above are matched first. This local-only
+# demo page is a plain static file - no build step, no framework - talking to
+# the API above exactly like any other client would.
+app.mount("/", StaticFiles(directory=Path(__file__).parent / "static", html=True), name="static")

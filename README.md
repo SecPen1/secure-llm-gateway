@@ -46,6 +46,14 @@ python scripts/verify_audit_log.py
 
 Note: the default rate limit (5 requests, refilling at 1 per 2 seconds per client) applies immediately — expect `429`s if you script more than a handful of quick requests against one client while testing.
 
+## Local demo UI
+
+Once the gateway is running (`uvicorn gateway.main:app --reload`), open **http://127.0.0.1:8000/** in a browser. It's a single static page (`gateway/static/index.html`, no build step, no framework) served by the gateway itself, that talks to `POST /v1/chat` exactly like any other client — nothing about the demo is special-cased in the backend.
+
+Paste in a Client ID and API key (generate one with `scripts/generate_client_key.py` — the page has a reminder), then either type your own message or click a preset to see a specific control fire: a benign message passing straight through, a prompt-injection attempt getting blocked with its matched categories shown, a credit card number coming back redacted, a client-submitted `role: "system"` message getting rejected, or firing six requests back-to-back to watch the rate limiter kick in mid-flood. The response panel shows the exact JSON the gateway returned, so nothing is hidden between the click and the control.
+
+This is local-only by design — not deployed or publicly hosted. Standing it up somewhere public would mean running the backend continuously (cost, uptime, another thing that can break), which wasn't worth it for a repo whose primary audience reads code and design docs; running it locally in under a minute is enough to make every control tangible without that ongoing maintenance surface.
+
 ## Slice 1: Input validation & sanitization
 
 **What it does:** every request to `POST /v1/chat` is checked against a strict schema (`gateway/schemas.py`) before anything else happens — required fields, allowed roles, and length limits on both the message list and each message's content. Requests that fail schema validation are rejected with `422` before they reach any application logic.
