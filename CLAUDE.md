@@ -8,7 +8,7 @@ Secure LLM Gateway — a portfolio project (see [PROJECT_HANDOFF.md](PROJECT_HAN
 
 ## Status
 
-Python 3.12 + FastAPI. Slice 1 (input validation & sanitization) is done — see `gateway/`. Next up: slice 2 (auth layer).
+Python 3.12 + FastAPI. Slices 1–2 done (input validation, auth layer) — see `gateway/`. Next up: slice 3 (prompt injection defenses).
 
 ## Working conventions
 
@@ -21,10 +21,13 @@ Python 3.12 + FastAPI. Slice 1 (input validation & sanitization) is done — see
 ## Commands
 
 ```
-pip install -r requirements.txt   # install deps (run inside a venv)
-uvicorn gateway.main:app --reload # run the gateway locally
-pytest                            # run the test suite
+pip install -r requirements.txt          # install deps (run inside a venv)
+uvicorn gateway.main:app --reload        # run the gateway locally
+pytest                                   # run the test suite
+python scripts/generate_client_key.py X  # register client X, print its API key once
 ```
+
+`gateway/clients.json` (the local client registry) is git-ignored — generate your own locally, never commit it.
 
 ## Docs map
 
