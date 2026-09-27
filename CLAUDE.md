@@ -34,6 +34,8 @@ python scripts/verify_audit_log.py       # check the audit log's hash chain is i
 
 Rate limits are in-memory per-process (`gateway/rate_limiter.py`) — default 5 requests/client before throttling kicks in. Expect `429`s from manual testing if you script more than a handful of quick requests against one client.
 
+A local-only demo UI (`gateway/static/index.html`, mounted at `/` in `gateway/main.py`) is served automatically by `uvicorn gateway.main:app` — plain HTML/CSS/JS, no build step, no framework. It's a thin client against `/v1/chat`; don't add backend behavior that only exists for the UI's sake.
+
 ## Docs map
 
 - `PROJECT_HANDOFF.md` — scope, priorities, build order, definition of done

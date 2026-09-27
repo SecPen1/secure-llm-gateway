@@ -51,4 +51,4 @@ v1 stopped after step 6, as planned. Multi-tenant network segmentation, a traine
 
 - Repo name: `secure-llm-gateway` (public, under github.com/SecPen1)
 - Stack: Python 3.12 + FastAPI
-- Demo UI: yes, eventually — but deferred until a slice exists worth clicking through (auth + a real LLM call). Slice 1 has no downstream call yet, so it's demoed via automated tests instead.
+- Demo UI: built, local-only. A static page (`gateway/static/index.html`) served by the gateway itself — no separate hosting, no build step. Public hosting was considered and deliberately skipped: it would mean running the backend continuously for a repo whose primary audience reads code and design docs, and wasn't worth the added cost/uptime/maintenance surface.
