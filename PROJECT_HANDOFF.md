@@ -45,6 +45,9 @@ Stop after step 6 for v1. Multi-tenant network segmentation, a trained injection
 
 ## Not Yet Decided
 
-- Final repo name
 - Whether to include a lightweight demo UI or keep it API-only
 - Whether to expand into a second lab project (e.g. AI agent sandboxing) after this one is complete
+
+## Decided
+
+- Repo name: `secure-llm-gateway` (public, under github.com/SecPen1)
