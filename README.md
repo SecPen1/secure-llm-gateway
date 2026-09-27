@@ -2,7 +2,7 @@
 
 A reference implementation of a security-focused gateway sitting in front of an LLM API (Claude), built as a portfolio project demonstrating applied security architecture — not just working code, but the design decisions and trade-offs behind it.
 
-**Status:** slice 2 of 6 complete. See the docs below for the design work behind it.
+**Status:** slice 3 of 6 complete. See the docs below for the design work behind it.
 
 ## Why this exists
 
@@ -17,7 +17,7 @@ This project is a hands-on demonstration of security architecture thinking appli
 
 1. **Input validation & sanitization** — done (see below)
 2. **Auth layer (per-client, scoped)** — done (see below)
-3. Prompt injection defenses
+3. **Prompt injection defenses** — done (see below)
 4. Output filtering
 5. Audit logging
 6. Rate limiting / cost controls
@@ -45,9 +45,9 @@ python scripts/generate_client_key.py my-client
 
 **What it does:** every request to `POST /v1/chat` is checked against a strict schema (`gateway/schemas.py`) before anything else happens — required fields, allowed roles, and length limits on both the message list and each message's content. Requests that fail schema validation are rejected with `422` before they reach any application logic.
 
-On top of schema validation, each message's content is screened against a small set of known prompt-injection phrasings (`gateway/validation.py`) — things like "ignore previous instructions" or "reveal your system prompt." A match is rejected with `400`.
+On top of schema validation, each message's content was originally screened against a small, flat list of known prompt-injection phrasings. That screening has since been superseded by the layered defense built in slice 3 (`gateway/injection_defense.py`) — see below.
 
-**Design decision — why heuristics now, not a classifier:** this heuristic screening is a coarse first gate at the input boundary, not the full prompt-injection defense (that's slice 3, tracked as an open design decision in `THREAT_MODEL.md` under *Information Disclosure*). Starting with a small, explainable regex list keeps this slice honest about what it actually catches — a determined attacker can phrase around a fixed pattern list — while giving a cheap, auditable layer to build on. Full injection defense will layer heuristics with more context-aware checks; committing to a trained classifier in slice 1 would be building ahead of scope per the project's build order.
+**Design decision — why heuristics now, not a classifier:** this heuristic screening is a coarse first gate at the input boundary, not the full prompt-injection defense. Starting with a small, explainable regex list keeps this slice honest about what it actually catches — a determined attacker can phrase around a fixed pattern list — while giving a cheap, auditable layer to build on. Committing to a trained classifier in slice 1 would be building ahead of scope per the project's build order.
 
 **Maps to threat model:** `THREAT_MODEL.md` → Tampering (strict input schema validation) and Information Disclosure (early-stage injection screening).
 
@@ -68,6 +68,21 @@ Beyond just proving *a* valid key, the gateway checks that the authenticated cli
 **Maps to threat model:** `THREAT_MODEL.md` → Spoofing (per-client key authentication) and Elevation of Privilege (client_id binding prevents one client acting as another).
 
 **Demo:** see `tests/test_auth.py` — covers no auth header, an invalid key, a valid key, and a spoofed `client_id`.
+
+## Slice 3: Prompt injection defenses
+
+**What it does:** `gateway/injection_defense.py` replaces slice 1's flat pattern list with two layers:
+
+1. **Centralized system prompts, enforced.** A request containing any message with `role: "system"` is rejected with `400`. Only the gateway is allowed to establish a system prompt — a client can no longer smuggle one in through the message array to override it. This resolves the "centralized vs. per-client system prompts" item that had been sitting open in `THREAT_MODEL.md`.
+2. **Categorized, severity-scored heuristic screening.** Patterns are grouped into categories (instruction override, role/mode manipulation, system-prompt extraction, fake delimiter injection like a message trying to inject a fake `system:` turn via a newline). Each category carries a weight; a request is blocked once matched categories' weights sum to a threshold (currently 3), not on any single match. Before matching, input is Unicode-normalized (NFKC) and stripped of zero-width characters, which defeats the common trick of splitting a flagged word with invisible characters to dodge a literal regex.
+
+**Design decision — why scoring, not "any match blocks":** a flat pattern list (slice 1) treats a single incidental word match the same as a blatant jailbreak attempt, which is exactly how these filters generate false positives in practice. Scoring lets one weak, ambiguous signal (e.g. "developer mode" in isolation) pass through, while the same signal combined with another, or a single high-confidence signal alone (like an injected fake delimiter), still blocks. The threshold and weights are a tunable, documented knob — not a claim that this is complete. This is still explicitly heuristic/regex-based, per the build order's instruction not to build a trained classifier ahead of scope.
+
+**Known gap, deliberately out of scope for v1:** this remains pattern-based and will miss novel phrasings outside the categories covered; it's a coarse gate, not a semantic understanding of intent. `THREAT_MODEL.md` notes revisiting this if the false-negative rate proves too high in practice.
+
+**Maps to threat model:** `THREAT_MODEL.md` → Information Disclosure (prompt injection / system-prompt extraction) and both resolved Open Design Decisions.
+
+**Demo:** see `tests/test_injection_defense.py` — covers a benign message with incidental keyword overlap, a single weak signal that's allowed through, combined weak signals that block, a high-severity signal that blocks alone, a zero-width-obfuscated bypass attempt that's still caught, and a rejected client-submitted `role: "system"` message.
 
 ## Built with Claude Code
 

@@ -8,7 +8,7 @@ Secure LLM Gateway — a portfolio project (see [PROJECT_HANDOFF.md](PROJECT_HAN
 
 ## Status
 
-Python 3.12 + FastAPI. Slices 1–2 done (input validation, auth layer) — see `gateway/`. Next up: slice 3 (prompt injection defenses).
+Python 3.12 + FastAPI. Slices 1–3 done (input validation, auth layer, prompt injection defenses) — see `gateway/`. Next up: slice 4 (output filtering).
 
 ## Working conventions
 

@@ -65,5 +65,5 @@ This document defines the threat model for a gateway service that mediates acces
 
 ## Open Design Decisions
 
-- Heuristic/regex-based injection detection vs. a dedicated classifier model — starting with heuristics for v1 (faster to implement, explainable), revisit if false-negative rate is too high
-- Centralized vs. per-client system prompts — leaning centralized for consistency and easier audit
+- **Resolved (slice 3):** Heuristic/regex-based injection detection vs. a dedicated classifier model — heuristics for v1 (faster to implement, explainable). Now a categorized, severity-scored layer rather than single-pattern matching; see README Slice 3. Revisit if false-negative rate proves too high in practice.
+- **Resolved (slice 3):** Centralized vs. per-client system prompts — centralized. Client-submitted messages may not use `role: system`; enforced in `gateway/injection_defense.py`. See README Slice 3.
