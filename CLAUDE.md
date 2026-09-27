@@ -1,20 +1,22 @@
 # CLAUDE.md
 
-Reference doc for Claude Code sessions working in this repo. Keep this file short — put rationale and narrative in `PROJECT_HANDOFF.md` / `THREAT_MODEL.md`, not here.
+Reference doc for Claude Code sessions working in this repo. Keep this file short — put rationale and narrative in `README.md` / `THREAT_MODEL.md`, not here.
 
 ## What this is
 
-Secure LLM Gateway — a portfolio project (see [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md) for full scope). Public repo; audience includes hiring managers, so code and docs both need to read cleanly.
+Secure LLM Gateway — a portfolio project (see [README.md](README.md) for full scope, purpose, and audience). Public repo; audience includes hiring managers, so code and docs both need to read cleanly.
+
+A `PROJECT_HANDOFF.md` may exist locally, git-ignored — private working notes for planning across sessions, not part of the published repo. Don't assume it exists or reference it in anything user-facing; `README.md` and `THREAT_MODEL.md` are the canonical public docs.
 
 ## Status
 
-Python 3.12 + FastAPI. v1 complete — all 6 slices done (input validation, auth layer, prompt injection defenses, output filtering, audit logging, rate limiting / cost controls). See `gateway/`. `PROJECT_HANDOFF.md` says stop after step 6; what's next (scope expansion, a second lab project, or leaving this as-is) hasn't been decided.
+Python 3.12 + FastAPI. v1 complete — all 6 slices done (input validation, auth layer, prompt injection defenses, output filtering, audit logging, rate limiting / cost controls). See `gateway/`. v1's build order stopped after step 6 as planned; what's next (scope expansion, a second lab project, or leaving this as-is) hasn't been decided.
 
 The LLM call itself is currently a deterministic stub (`gateway/llm_client.py`, `StubLLMClient`) — no real upstream API integration exists yet. Check `README.md` Slice 4 before assuming otherwise.
 
 ## Working conventions
 
-- **Slice-by-slice**: build one control end-to-end (see Build Order in `PROJECT_HANDOFF.md`) before starting the next. Don't build ahead of v1 scope.
+- **Slice-by-slice**: build one control end-to-end (see Build Order in `README.md`) before starting the next. Don't build ahead of v1 scope.
 - **Conventional commits**: `feat:`, `fix:`, `docs:`, `chore:`.
 - **One PR per slice/change**, kept small and reviewable.
 - Every control maps to a specific entry in `THREAT_MODEL.md` — reference it in the PR/commit when adding one.
@@ -38,5 +40,5 @@ A local-only demo UI (`gateway/static/index.html`, mounted at `/` in `gateway/ma
 
 ## Docs map
 
-- `PROJECT_HANDOFF.md` — scope, priorities, build order, definition of done
+- `README.md` — scope, priorities, build order, per-slice design decisions
 - `THREAT_MODEL.md` — assets, actors, attack paths, trust boundaries, open design decisions

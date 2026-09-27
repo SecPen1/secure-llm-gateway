@@ -10,7 +10,6 @@ This project is a hands-on demonstration of security architecture thinking appli
 
 ## Docs
 
-- [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md) — project scope, working style, and build order
 - [THREAT_MODEL.md](THREAT_MODEL.md) — assets, actors, STRIDE-based attack paths, and trust boundaries
 
 ## Build order (v1)
@@ -140,13 +139,13 @@ Both are enforced with `429 Too Many Requests` and a `Retry-After` header. Every
 
 **Design decision — two separate checks, not one:** a fast burst of small requests and a slow trickle of enormous ones are different failure modes (`THREAT_MODEL.md` names both: high-volume *and* high-cost requests under Denial of Service / Denial of Wallet). Rate limiting alone wouldn't catch a client sending one request every few seconds that's each enormous; a cost budget alone wouldn't catch a rapid-fire flood of tiny ones. Composing two small, single-purpose checks stayed simpler than one mechanism trying to model both.
 
-**Known gap, deliberately out of scope for v1:** state is in-memory, per-process — quotas reset on restart and don't hold up across multiple instances behind a load balancer; a real deployment needs a shared store (e.g. Redis) for this to be correct at scale. The cost proxy (character count) is a stand-in that should be replaced with real token usage once a real upstream LLM call exists. Anomaly detection on usage spikes (`THREAT_MODEL.md`'s fuller mitigation) is explicitly out of scope per `PROJECT_HANDOFF.md`'s v1 build order.
+**Known gap, deliberately out of scope for v1:** state is in-memory, per-process — quotas reset on restart and don't hold up across multiple instances behind a load balancer; a real deployment needs a shared store (e.g. Redis) for this to be correct at scale. The cost proxy (character count) is a stand-in that should be replaced with real token usage once a real upstream LLM call exists. Anomaly detection on usage spikes (`THREAT_MODEL.md`'s fuller mitigation) is explicitly out of scope for v1.
 
 **Maps to threat model:** `THREAT_MODEL.md` → Denial of Service / Denial of Wallet, covering the "Rate limit / usage data" asset.
 
 **Demo:** see `tests/test_rate_limiting.py` — covers requests within capacity, a burst exceeding capacity being rejected, recovery after the refill window (using a fake clock, not a real sleep), a cost budget being exceeded, and the budget resetting after its window.
 
-This closes out v1 scope (`PROJECT_HANDOFF.md`: "stop after step 6"). What comes next — expanding scope, a second lab project, or leaving this as the finished reference build — is an open call, not yet made.
+This closes out v1 scope as originally planned — stop after step 6. What comes next — expanding scope, a second lab project, or leaving this as the finished reference build — is an open call, not yet made.
 
 ## Built with Claude Code
 
