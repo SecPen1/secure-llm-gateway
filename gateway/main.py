@@ -1,8 +1,13 @@
 from fastapi import Depends, FastAPI, HTTPException
 
 from .auth import authenticate
+from .injection_defense import (
+    InjectionDetected,
+    SystemRoleNotAllowed,
+    reject_client_system_messages,
+    screen_for_injection,
+)
 from .schemas import ChatRequest
-from .validation import InjectionDetected, screen_for_injection
 
 app = FastAPI(title="Secure LLM Gateway", version="0.1.0")
 
@@ -19,6 +24,14 @@ def chat(request: ChatRequest, authenticated_client_id: str = Depends(authentica
             status_code=403,
             detail="client_id does not match the authenticated client",
         )
+
+    try:
+        reject_client_system_messages(request.messages)
+    except SystemRoleNotAllowed as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="client-submitted messages may not use role 'system'",
+        ) from exc
 
     for message in request.messages:
         try:
