@@ -71,7 +71,7 @@ Beyond just proving *a* valid key, the gateway checks that the authenticated cli
 
 ## Built with Claude Code
 
-This repo is built in collaboration with [Claude Code](https://claude.com/claude-code) — Claude does the implementation work, under human direction and review, for every design decision, control, and trade-off documented here. See [CLAUDE.md](CLAUDE.md) for the working conventions used.
+Implementation built in collaboration with [Claude Code](https://claude.com/claude-code), under my direction — I own the threat model, the design decisions, and the trade-offs documented in this repo; Claude handles scaffolding and code generation against that direction. See [CLAUDE.md](CLAUDE.md) for the working conventions used.
 
 ## License
 
