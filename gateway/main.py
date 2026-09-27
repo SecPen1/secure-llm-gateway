@@ -1,5 +1,6 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 
+from .auth import authenticate
 from .schemas import ChatRequest
 from .validation import InjectionDetected, screen_for_injection
 
@@ -12,7 +13,13 @@ def healthz():
 
 
 @app.post("/v1/chat")
-def chat(request: ChatRequest):
+def chat(request: ChatRequest, authenticated_client_id: str = Depends(authenticate)):
+    if authenticated_client_id != request.client_id:
+        raise HTTPException(
+            status_code=403,
+            detail="client_id does not match the authenticated client",
+        )
+
     for message in request.messages:
         try:
             screen_for_injection(message.content)
