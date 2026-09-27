@@ -2,7 +2,7 @@
 
 A reference implementation of a security-focused gateway sitting in front of an LLM API (Claude), built as a portfolio project demonstrating applied security architecture — not just working code, but the design decisions and trade-offs behind it.
 
-**Status:** slice 3 of 6 complete. See the docs below for the design work behind it.
+**Status:** slice 4 of 6 complete. See the docs below for the design work behind it.
 
 ## Why this exists
 
@@ -18,7 +18,7 @@ This project is a hands-on demonstration of security architecture thinking appli
 1. **Input validation & sanitization** — done (see below)
 2. **Auth layer (per-client, scoped)** — done (see below)
 3. **Prompt injection defenses** — done (see below)
-4. Output filtering
+4. **Output filtering** — done (see below)
 5. Audit logging
 6. Rate limiting / cost controls
 
@@ -83,6 +83,20 @@ Beyond just proving *a* valid key, the gateway checks that the authenticated cli
 **Maps to threat model:** `THREAT_MODEL.md` → Information Disclosure (prompt injection / system-prompt extraction) and both resolved Open Design Decisions.
 
 **Demo:** see `tests/test_injection_defense.py` — covers a benign message with incidental keyword overlap, a single weak signal that's allowed through, combined weak signals that block, a high-severity signal that blocks alone, a zero-width-obfuscated bypass attempt that's still caught, and a rejected client-submitted `role: "system"` message.
+
+## Slice 4: Output filtering
+
+**What it does:** before a response reaches the client, `gateway/output_filter.py` scans it for high-confidence credential and financial-identifier patterns — credit card numbers, US Social Security numbers, AWS access keys, and generic `sk-`-style API key tokens — and replaces each match with `[REDACTED:<category>]`. The response still comes back to the caller; only the matched substrings are masked. The endpoint's JSON now includes a `redactions` list naming which categories fired, so a caller (or, later, an audit log) can see that scrubbing happened without needing the original sensitive value.
+
+This slice also introduces `gateway/llm_client.py`, a minimal pluggable client with a `generate()` interface. The only implementation right now is a deterministic stub that echoes the caller's own last message back — there's no real upstream LLM call yet. That's plumbing to give output filtering something to act on, not the deliverable; see the gap called out below.
+
+**Design decision — redact, don't reject:** input validation (slices 1–3) rejects a whole request when something's wrong, because the client's intent is what's being judged. Output is different — the surrounding response is presumably fine; only a leaked fragment (a credential the model shouldn't have echoed) is the problem. Discarding an entire otherwise-useful response over one embedded token would be a worse trade than masking that token, so this layer redacts in place rather than blocking with an error. Patterns are deliberately scoped to high-confidence credential/financial formats rather than broad PII (e.g. email addresses aren't touched) to keep false positives low enough that the filter stays usable.
+
+**Known gap, deliberately out of scope for v1:** the LLM call is a stub, not a real integration — so today this filter only ever sees whatever the caller's own input echoes back. Wiring a real upstream call wasn't on the v1 build order and isn't needed to demonstrate the control itself; regardless of where response text comes from, the filtering logic is the same. Also, like any regex/DLP approach, this is pattern-based: it will miss sensitive data in formats it doesn't recognize and can false-positive on coincidental digit sequences (e.g. a 16-digit number that isn't really a card). No structured-data (JSON/nested) redaction is implemented.
+
+**Maps to threat model:** `THREAT_MODEL.md` → Information Disclosure (data exfiltration via output), covering the "LLM responses" and "API credentials" assets.
+
+**Demo:** see `tests/test_output_filtering.py` — covers a credit card, an SSN, an AWS access key, a generic API key token, and a benign response with no redactions.
 
 ## Built with Claude Code
 

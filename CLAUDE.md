@@ -8,7 +8,9 @@ Secure LLM Gateway — a portfolio project (see [PROJECT_HANDOFF.md](PROJECT_HAN
 
 ## Status
 
-Python 3.12 + FastAPI. Slices 1–3 done (input validation, auth layer, prompt injection defenses) — see `gateway/`. Next up: slice 4 (output filtering).
+Python 3.12 + FastAPI. Slices 1–4 done (input validation, auth layer, prompt injection defenses, output filtering) — see `gateway/`. Next up: slice 5 (audit logging).
+
+The LLM call itself is currently a deterministic stub (`gateway/llm_client.py`, `StubLLMClient`) — no real upstream API integration exists yet. Check `README.md` Slice 4 before assuming otherwise.
 
 ## Working conventions
 

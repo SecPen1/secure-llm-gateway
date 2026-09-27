@@ -7,9 +7,12 @@ from .injection_defense import (
     reject_client_system_messages,
     screen_for_injection,
 )
+from .llm_client import get_llm_client
+from .output_filter import filter_response
 from .schemas import ChatRequest
 
 app = FastAPI(title="Secure LLM Gateway", version="0.1.0")
+_llm_client = get_llm_client()
 
 
 @app.get("/healthz")
@@ -39,8 +42,13 @@ def chat(request: ChatRequest, authenticated_client_id: str = Depends(authentica
         except InjectionDetected as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    raw_response = _llm_client.generate(request.messages)
+    filtered_response, redacted_categories = filter_response(raw_response)
+
     return {
         "status": "accepted",
         "client_id": request.client_id,
         "message_count": len(request.messages),
+        "response": filtered_response,
+        "redactions": redacted_categories,
     }
