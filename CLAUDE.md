@@ -8,7 +8,7 @@ Secure LLM Gateway — a portfolio project (see [PROJECT_HANDOFF.md](PROJECT_HAN
 
 ## Status
 
-Python 3.12 + FastAPI. Slices 1–4 done (input validation, auth layer, prompt injection defenses, output filtering) — see `gateway/`. Next up: slice 5 (audit logging).
+Python 3.12 + FastAPI. Slices 1–5 done (input validation, auth layer, prompt injection defenses, output filtering, audit logging) — see `gateway/`. Next up: slice 6 (rate limiting / cost controls).
 
 The LLM call itself is currently a deterministic stub (`gateway/llm_client.py`, `StubLLMClient`) — no real upstream API integration exists yet. Check `README.md` Slice 4 before assuming otherwise.
 
@@ -27,9 +27,10 @@ pip install -r requirements.txt          # install deps (run inside a venv)
 uvicorn gateway.main:app --reload        # run the gateway locally
 pytest                                   # run the test suite
 python scripts/generate_client_key.py X  # register client X, print its API key once
+python scripts/verify_audit_log.py       # check the audit log's hash chain is intact
 ```
 
-`gateway/clients.json` (the local client registry) is git-ignored — generate your own locally, never commit it.
+`gateway/clients.json` (the local client registry) and `logs/audit.log` are both git-ignored — generated locally, never committed. Tests never touch either: `tests/conftest.py`'s `audit_log_path` fixture is `autouse=True` and redirects logging to a tmp file for every test.
 
 ## Docs map
 

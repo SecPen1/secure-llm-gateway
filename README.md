@@ -2,7 +2,7 @@
 
 A reference implementation of a security-focused gateway sitting in front of an LLM API (Claude), built as a portfolio project demonstrating applied security architecture — not just working code, but the design decisions and trade-offs behind it.
 
-**Status:** slice 4 of 6 complete. See the docs below for the design work behind it.
+**Status:** slice 5 of 6 complete. See the docs below for the design work behind it.
 
 ## Why this exists
 
@@ -19,7 +19,7 @@ This project is a hands-on demonstration of security architecture thinking appli
 2. **Auth layer (per-client, scoped)** — done (see below)
 3. **Prompt injection defenses** — done (see below)
 4. **Output filtering** — done (see below)
-5. Audit logging
+5. **Audit logging** — done (see below)
 6. Rate limiting / cost controls
 
 Each slice gets a working control, a README section explaining the design decision behind it, and a test or demo showing it functioning.
@@ -39,6 +39,9 @@ pytest
 
 # register a client and get an API key (printed once)
 python scripts/generate_client_key.py my-client
+
+# verify the audit log's tamper-evident hash chain
+python scripts/verify_audit_log.py
 ```
 
 ## Slice 1: Input validation & sanitization
@@ -97,6 +100,22 @@ This slice also introduces `gateway/llm_client.py`, a minimal pluggable client w
 **Maps to threat model:** `THREAT_MODEL.md` → Information Disclosure (data exfiltration via output), covering the "LLM responses" and "API credentials" assets.
 
 **Demo:** see `tests/test_output_filtering.py` — covers a credit card, an SSN, an AWS access key, a generic API key token, and a benign response with no redactions.
+
+## Slice 5: Audit logging
+
+**What it does:** `gateway/audit_log.py` writes a structured JSON-lines record for every security-relevant event: a successful chat, an auth failure, a `client_id` mismatch, a rejected client-submitted system-role message, a blocked injection attempt, and a schema-validation failure. Each record carries a timestamp, the authenticated `client_id` (or `null` where there isn't one — see below), an `event_type`, an `outcome` (`allowed`/`blocked`), and a `detail` object.
+
+Each record also carries `prev_hash` (the previous record's hash) and its own `hash`, computed over everything else in the record. That chains every entry to the one before it — editing, reordering, or forging any past entry breaks the hash chain from that point forward. `scripts/verify_audit_log.py` walks the file and reports whether the chain is intact; `tests/test_audit_log.py` proves this concretely by tampering with a written entry and confirming verification then fails.
+
+**Design decision — what never goes in `detail`:** no raw message content, no credentials, no redacted values — only counts, category names, and booleans (e.g. `{"categories": ["instruction_override"], "score": 4}`, never the message text that triggered it). `THREAT_MODEL.md` names the audit log itself a trusted sink that "must not contain raw secrets or excessive PII" — logging the exact content the rest of the gateway exists to screen or redact would just relocate the exposure, not close it.
+
+**Design decision — why auth failures log `client_id: null`, not the claimed one:** at the point a key fails to validate, the only `client_id` available is whatever the caller put in the request body — unverified and attacker-controlled. Logging it as if it were real would let anyone submit a failed request claiming to be a legitimate client, planting that name into the audit trail for a failure that wasn't theirs. Nothing is logged as a client's action until that client has actually authenticated.
+
+**Design decision — hash chain, not a real WORM store:** "immutable" for a v1 reference build without standing up infrastructure means tamper-*evident*, not tamper-*proof*. A hash chain over an append-only local file lets anyone re-derive whether stored entries have been altered — it does not stop someone with filesystem access from deleting the whole file or truncating the end of it (there's no external witness of the latest hash). `THREAT_MODEL.md`'s "Gateway → Logging/SIEM" trust boundary is the honest answer to that gap: a production deployment ships these records to a remote, access-controlled sink as they're written, rather than trusting local storage at all.
+
+**Maps to threat model:** `THREAT_MODEL.md` → Repudiation (immutable, timestamped, identity-tied audit logging) and the "Audit logs" asset.
+
+**Demo:** see `tests/test_audit_log.py` — covers a successful chat being logged, an injection block logged with categories but not the triggering text, an auth failure logged with no claimed identity, a redaction event logged without the raw sensitive value, and a hash-chain tamper attempt being detected.
 
 ## Built with Claude Code
 
