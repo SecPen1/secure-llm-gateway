@@ -24,7 +24,11 @@ _CLIENTS = _load_clients()
 
 
 def _hash_key(api_key: str) -> str:
-    return hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+    # Not a password hash: api_key is a 256-bit random token (secrets.token_urlsafe),
+    # not a human-chosen low-entropy secret, so there's no guessable search space for
+    # a slow/adaptive hash (bcrypt/argon2) to protect against - a fast hash is correct
+    # here, the same way GitHub/AWS hash their own high-entropy tokens.
+    return hashlib.sha256(api_key.encode("utf-8")).hexdigest()  # lgtm[py/weak-sensitive-data-hashing]
 
 
 def authenticate(authorization: str | None = Header(default=None)) -> str:
